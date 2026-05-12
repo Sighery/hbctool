@@ -1,7 +1,11 @@
-from hbctool.util import *
-from .parser import parse, export, INVALID_LENGTH
-from .translator import disassemble, assemble
 from struct import pack, unpack
+from typing import BinaryIO, Literal
+
+from hbctool.hbc.hbcbase import *
+from hbctool.util import *
+
+from .parser import INVALID_LENGTH, export, parse
+from .translator import assemble, disassemble
 
 NullTag = 0
 TrueTag = 1 << 4
@@ -13,33 +17,32 @@ ByteStringTag = 6 << 4
 IntegerTag = 7 << 4
 TagMask = 0x70
 
-class HBC84:
-    def __init__(self, f=None):
+class HBC84(HBCBase):
+    def __init__(self, f: BinaryIO | None = None):
+        self.obj: Metadata | None = None
         if f:
             self.obj = parse(f)
-        else:
-            self.obj = None
 
-    def export(self, f):
+    def export(self, f: BinaryIO) -> None:
         export(self.getObj(), f)
 
-    def getObj(self):
+    def getObj(self) -> Metadata:
         assert self.obj, "Obj is not set."
         return self.obj
 
-    def setObj(self, obj):
+    def setObj(self, obj: Metadata) -> None:
         self.obj = obj
 
-    def getVersion(self):
-        return 84   
+    def getVersion(self) -> Literal[84]:
+        return 84
 
-    def getHeader(self):
+    def getHeader(self) -> Header:
         return self.getObj()["header"]
 
-    def getFunctionCount(self):
+    def getFunctionCount(self) -> int:
         return self.getObj()["header"]["functionCount"]
 
-    def getFunction(self, fid, disasm=True):
+    def getFunction(self, fid: int, disasm: bool = True) -> FuncUnion:
         assert fid >= 0 and fid < self.getFunctionCount(), "Invalid function ID"
 
         functionHeader = self.getObj()["functionHeaders"][fid]
@@ -54,15 +57,29 @@ class HBC84:
         start = offset - instOffset
         end = start + bytecodeSizeInBytes
         bc = self.getObj()["inst"][start:end]
-        insts = bc
-        if disasm:
-            insts = disassemble(bc)
-        
+
         functionNameStr, _ = self.getString(functionName)
 
-        return functionNameStr, paramCount, registerCount, symbolCount, insts, functionHeader
-    
-    def setFunction(self, fid, func, disasm=True):
+        if not disasm:
+            return Function(
+                functionNameStr,
+                paramCount,
+                registerCount,
+                symbolCount,
+                bc,
+                functionHeader,
+            )
+        else:
+            return FunctionDisassembled(
+                functionNameStr,
+                paramCount,
+                registerCount,
+                symbolCount,
+                disassemble(bc),
+                functionHeader,
+            )
+
+    def setFunction(self, fid: int, func: FuncUnion, disasm: bool = True) -> None:
         assert fid >= 0 and fid < self.getFunctionCount(), "Invalid function ID"
 
         functionName, paramCount, registerCount, symbolCount, insts, _ = func
@@ -81,20 +98,20 @@ class HBC84:
 
         instOffset = self.getObj()["instOffset"]
         start = offset - instOffset
-        
+
         bc = insts
 
         if disasm:
             bc = assemble(insts)
-            
+
         assert len(bc) <= bytecodeSizeInBytes, "Overflowed instruction length is not supported yet."
         functionHeader["bytecodeSizeInBytes"] = len(bc)
         memcpy(self.getObj()["inst"], bc, start, len(bc))
-        
-    def getStringCount(self):
+
+    def getStringCount(self) -> int:
         return self.getObj()["header"]["stringCount"]
 
-    def getString(self, sid):
+    def getString(self, sid: int) -> String:
         assert sid >= 0 and sid < self.getStringCount(), "Invalid string ID"
 
         stringTableEntry = self.getObj()["stringTableEntries"][sid]
@@ -114,9 +131,12 @@ class HBC84:
             length*=2
 
         s = bytes(stringStorage[offset:offset + length])
-        return s.hex() if isUTF16 else s.decode("utf-8"), (isUTF16, offset, length)
-    
-    def setString(self, sid, val):
+        return String(
+            s.hex() if isUTF16 else s.decode("utf-8"),
+            StringMetadata(isUTF16, offset, length),
+        )
+
+    def setString(self, sid: int, val: str) -> None:
         assert sid >= 0 and sid < self.getStringCount(), "Invalid string ID"
 
         stringTableEntry = self.getObj()["stringTableEntries"][sid]
@@ -131,18 +151,19 @@ class HBC84:
             stringTableOverflowEntry = stringTableOverflowEntries[offset]
             offset = stringTableOverflowEntry["offset"]
             length = stringTableOverflowEntry["length"]
-        
+
+        s: list[int] | bytes
         if isUTF16:
             s = list(bytes.fromhex(val))
             l = len(s)//2
         else:
             l = len(val)
             s = val.encode("utf-8")
-        
+
         assert l <= length, "Overflowed string length is not supported yet."
 
         memcpy(stringStorage, s, offset, len(s))
-        
+
     def _checkBufferTag(self, buf, iid):
         keyTag = buf[iid]
         if keyTag & 0x80:
@@ -184,10 +205,10 @@ class HBC84:
         else:
             type = "Empty"
             val = None
-        
+
         return type, val, ind
 
-    def getArrayBufferSize(self):
+    def getArrayBufferSize(self) -> int:
         return self.getObj()["header"]["arrayBufferSize"]
 
     def getArray(self, aid):
@@ -199,7 +220,7 @@ class HBC84:
         for _ in range(tag[0]):
             t, val, ind = self._SLPToString(tag[1], self.getObj()["arrayBuffer"], aid, ind)
             arr.append(val)
-        
+
         return t, arr
 
     def getObjKeyBufferSize(self):
@@ -214,7 +235,7 @@ class HBC84:
         for _ in range(tag[0]):
             t, val, ind = self._SLPToString(tag[1], self.getObj()["objKeyBuffer"], kid, ind)
             keys.append(val)
-        
+
         return t, keys
 
     def getObjValueBufferSize(self):
@@ -229,5 +250,5 @@ class HBC84:
         for _ in range(tag[0]):
             t, val, ind = self._SLPToString(tag[1], self.getObj()["objValueBuffer"], vid, ind)
             keys.append(val)
-        
+
         return t, keys

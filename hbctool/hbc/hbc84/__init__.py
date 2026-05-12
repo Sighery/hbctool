@@ -1,5 +1,5 @@
 from struct import pack, unpack
-from typing import BinaryIO, Generator, Literal, overload
+from typing import BinaryIO, cast, Generator, Literal
 
 from hbctool.hbc.hbcbase import *
 from hbctool.util import *
@@ -52,12 +52,6 @@ class HBC84(HBCBase):
     def getFunctionCount(self) -> int:
         return self.getObj()["header"]["functionCount"]
 
-    @overload
-    def getFunction(self, fid: int, disasm: Literal[True]) -> FunctionDisassembled: ...
-
-    @overload
-    def getFunction(self, fid: int, disasm: Literal[False]) -> Function: ...
-
     def getFunction(self, fid: int, disasm: bool = True) -> FuncUnion:
         assert fid >= 0 and fid < self.getFunctionCount(), "Invalid function ID"
 
@@ -94,6 +88,12 @@ class HBC84(HBCBase):
                 list(wrapped_disassemble(bc)),
                 functionHeader,
             )
+
+    def getBareFunction(self, fid: int) -> Function:
+        return cast(Function, self.getFunction(fid=fid, disasm=False))
+
+    def getDisassembledFunction(self, fid: int) -> FunctionDisassembled:
+        return cast(FunctionDisassembled, self.getFunction(fid=fid, disasm=True))
 
     def setFunction(self, fid: int, func: FuncUnion, disasm: bool = True) -> None:
         assert fid >= 0 and fid < self.getFunctionCount(), "Invalid function ID"

@@ -139,21 +139,14 @@ class HBCBase(ABC):
     @abstractmethod
     def getFunctionCount(self) -> int: ...
 
-    @overload
     @abstractmethod
-    def getFunction(self, fid: int, disasm: Literal[True]) -> FunctionDisassembled: ...
+    def getFunction(self, fid: int, disasm: bool = True) -> FuncUnion: ...
 
-    @overload
     @abstractmethod
-    def getFunction(self, fid: int, disasm: Literal[False]) -> Function: ...
+    def getBareFunction(self, fid: int) -> Function: ...
 
-    # TODO: Switch to two methods with proper return types?
     @abstractmethod
-    def getFunction(
-        self,
-        fid: int,
-        disasm: bool = True,
-    ) -> FuncUnion: ...
+    def getDisassembledFunction(self, fid: int) -> FunctionDisassembled: ...
 
     # TODO: Remove this disasm and rely on the func type
     @abstractmethod

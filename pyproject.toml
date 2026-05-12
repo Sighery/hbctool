@@ -1,9 +1,6 @@
 [project]
 name = "hbctool"
-version = "0.1.6"
-dependencies = [
-    "docopt ~=0.6.2"
-]
+dependencies = []
 requires-python = ">=3.6"
 description = "A command-line interface for disassembling and assembling the Hermes Bytecode."
 authors = [
@@ -37,6 +34,7 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
 ]
+dynamic = ["version"]
 
 [project.urls]
 Homepage = "https://github.com/Sighery/hbctool"
@@ -44,7 +42,7 @@ Documentation = "https://github.com/Sighery/hbctool"
 Repository = "https://github.com/Sighery/hbctool"
 
 [project.scripts]
-hbctool = "hbctool:main"
+hbctool = "hbctool.__main__:main"
 
 [build-system]
 requires = ["setuptools", "setuptools-scm"]
@@ -52,3 +50,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 packages = ["hbctool"]
+
+[tool.setuptools.dynamic]
+version = {attr = "hbctool.__version__"}

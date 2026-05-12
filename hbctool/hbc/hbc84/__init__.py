@@ -1,5 +1,5 @@
 from struct import pack, unpack
-from typing import BinaryIO, Literal, overload
+from typing import BinaryIO, Generator, Literal, overload
 
 from hbctool.hbc.hbcbase import *
 from hbctool.util import *
@@ -16,6 +16,15 @@ ShortStringTag = 5 << 4
 ByteStringTag = 6 << 4
 IntegerTag = 7 << 4
 TagMask = 0x70
+
+
+# TODO: Fix this at the source
+def wrapped_disassemble(bc: bytes | list[int]) -> Generator[InstructionDisassembled]:
+    for instruction in disassemble(bc):
+        yield InstructionDisassembled(
+            instruction=instruction[0],
+            arguments=[InstructionArgumentDisassembled._make(x) for x in instruction[1]],
+        )
 
 
 class HBC84(HBCBase):
@@ -82,7 +91,7 @@ class HBC84(HBCBase):
                 paramCount,
                 registerCount,
                 symbolCount,
-                disassemble(bc),
+                list(wrapped_disassemble(bc)),
                 functionHeader,
             )
 

@@ -53,3 +53,14 @@ packages = ["hbctool"]
 
 [tool.setuptools.dynamic]
 version = {attr = "hbctool.__version__"}
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "black",
+    "isort",
+    "mypy",
+]
+
+[tool.mypy]
+files = "hbctool/"

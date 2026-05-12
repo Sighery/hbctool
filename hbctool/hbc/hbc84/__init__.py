@@ -1,5 +1,5 @@
 from struct import pack, unpack
-from typing import BinaryIO, Literal
+from typing import BinaryIO, Literal, overload
 
 from hbctool.hbc.hbcbase import *
 from hbctool.util import *
@@ -16,6 +16,7 @@ ShortStringTag = 5 << 4
 ByteStringTag = 6 << 4
 IntegerTag = 7 << 4
 TagMask = 0x70
+
 
 class HBC84(HBCBase):
     def __init__(self, f: BinaryIO | None = None):
@@ -41,6 +42,12 @@ class HBC84(HBCBase):
 
     def getFunctionCount(self) -> int:
         return self.getObj()["header"]["functionCount"]
+
+    @overload
+    def getFunction(self, fid: int, disasm: Literal[True]) -> FunctionDisassembled: ...
+
+    @overload
+    def getFunction(self, fid: int, disasm: Literal[False]) -> Function: ...
 
     def getFunction(self, fid: int, disasm: bool = True) -> FuncUnion:
         assert fid >= 0 and fid < self.getFunctionCount(), "Invalid function ID"
@@ -104,7 +111,9 @@ class HBC84(HBCBase):
         if disasm:
             bc = assemble(insts)
 
-        assert len(bc) <= bytecodeSizeInBytes, "Overflowed instruction length is not supported yet."
+        assert (
+            len(bc) <= bytecodeSizeInBytes
+        ), "Overflowed instruction length is not supported yet."
         functionHeader["bytecodeSizeInBytes"] = len(bc)
         memcpy(self.getObj()["inst"], bc, start, len(bc))
 
@@ -128,9 +137,9 @@ class HBC84(HBCBase):
             length = stringTableOverflowEntry["length"]
 
         if isUTF16:
-            length*=2
+            length *= 2
 
-        s = bytes(stringStorage[offset:offset + length])
+        s = bytes(stringStorage[offset : offset + length])
         return String(
             s.hex() if isUTF16 else s.decode("utf-8"),
             StringMetadata(isUTF16, offset, length),
@@ -155,7 +164,7 @@ class HBC84(HBCBase):
         s: list[int] | bytes
         if isUTF16:
             s = list(bytes.fromhex(val))
-            l = len(s)//2
+            l = len(s) // 2
         else:
             l = len(val)
             s = val.encode("utf-8")
@@ -167,9 +176,9 @@ class HBC84(HBCBase):
     def _checkBufferTag(self, buf, iid):
         keyTag = buf[iid]
         if keyTag & 0x80:
-            return (((keyTag & 0x0f) << 8) | (buf[iid + 1]), keyTag & TagMask)
+            return (((keyTag & 0x0F) << 8) | (buf[iid + 1]), keyTag & TagMask)
         else:
-            return (keyTag & 0x0f, keyTag & TagMask)
+            return (keyTag & 0x0F, keyTag & TagMask)
 
     def _SLPToString(self, tag, buf, iid, ind):
         start = iid + ind
@@ -179,19 +188,19 @@ class HBC84(HBCBase):
             ind += 1
         elif tag == ShortStringTag:
             type = "String"
-            val = unpack("<H", bytes(buf[start:start+2]))[0]
+            val = unpack("<H", bytes(buf[start : start + 2]))[0]
             ind += 2
         elif tag == LongStringTag:
             type = "String"
-            val = unpack("<L", bytes(buf[start:start+4]))[0]
+            val = unpack("<L", bytes(buf[start : start + 4]))[0]
             ind += 4
         elif tag == NumberTag:
             type = "Number"
-            val = unpack("<d", bytes(buf[start:start+8]))[0]
+            val = unpack("<d", bytes(buf[start : start + 8]))[0]
             ind += 8
         elif tag == IntegerTag:
             type = "Integer"
-            val = unpack("<L", bytes(buf[start:start+4]))[0]
+            val = unpack("<L", bytes(buf[start : start + 4]))[0]
             ind += 4
         elif tag == NullTag:
             type = "Null"
@@ -214,11 +223,13 @@ class HBC84(HBCBase):
     def getArray(self, aid):
         assert aid >= 0 and aid < self.getArrayBufferSize(), "Invalid Array ID"
         tag = self._checkBufferTag(self.getObj()["arrayBuffer"], aid)
-        ind = 2 if tag[0] > 0x0f else 1
+        ind = 2 if tag[0] > 0x0F else 1
         arr = []
         t = None
         for _ in range(tag[0]):
-            t, val, ind = self._SLPToString(tag[1], self.getObj()["arrayBuffer"], aid, ind)
+            t, val, ind = self._SLPToString(
+                tag[1], self.getObj()["arrayBuffer"], aid, ind
+            )
             arr.append(val)
 
         return t, arr
@@ -229,11 +240,13 @@ class HBC84(HBCBase):
     def getObjKey(self, kid):
         assert kid >= 0 and kid < self.getObjKeyBufferSize(), "Invalid ObjKey ID"
         tag = self._checkBufferTag(self.getObj()["objKeyBuffer"], kid)
-        ind = 2 if tag[0] > 0x0f else 1
+        ind = 2 if tag[0] > 0x0F else 1
         keys = []
         t = None
         for _ in range(tag[0]):
-            t, val, ind = self._SLPToString(tag[1], self.getObj()["objKeyBuffer"], kid, ind)
+            t, val, ind = self._SLPToString(
+                tag[1], self.getObj()["objKeyBuffer"], kid, ind
+            )
             keys.append(val)
 
         return t, keys
@@ -244,11 +257,13 @@ class HBC84(HBCBase):
     def getObjValue(self, vid):
         assert vid >= 0 and vid < self.getObjValueBufferSize(), "Invalid ObjValue ID"
         tag = self._checkBufferTag(self.getObj()["objValueBuffer"], vid)
-        ind = 2 if tag[0] > 0x0f else 1
+        ind = 2 if tag[0] > 0x0F else 1
         keys = []
         t = None
         for _ in range(tag[0]):
-            t, val, ind = self._SLPToString(tag[1], self.getObj()["objValueBuffer"], vid, ind)
+            t, val, ind = self._SLPToString(
+                tag[1], self.getObj()["objValueBuffer"], vid, ind
+            )
             keys.append(val)
 
         return t, keys

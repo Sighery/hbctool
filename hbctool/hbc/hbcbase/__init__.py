@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import BinaryIO, NamedTuple, TypedDict
+from typing import BinaryIO, Literal, NamedTuple, TypedDict, overload
 
 
 class Header(TypedDict):
@@ -138,6 +138,14 @@ class HBCBase(ABC):
 
     @abstractmethod
     def getFunctionCount(self) -> int: ...
+
+    @overload
+    @abstractmethod
+    def getFunction(self, fid: int, disasm: Literal[True]) -> FunctionDisassembled: ...
+
+    @overload
+    @abstractmethod
+    def getFunction(self, fid: int, disasm: Literal[False]) -> Function: ...
 
     # TODO: Switch to two methods with proper return types?
     @abstractmethod

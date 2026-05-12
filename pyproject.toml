@@ -1,34 +1,54 @@
-[tool.poetry]
+[project]
 name = "hbctool"
-version = "0.1.5"
-description = "A command-line interface for disassembling and assembling the Hermes Bytecode."
-authors = ["bongtrop", "ErbaZZ"]
-keywords = ["hbc", "hermes", "bytecode", "reverse", "hacking"]
-classifiers = [
-    'Development Status :: 3 - Alpha',
-    'Natural Language :: English',
-    'License :: OSI Approved :: MIT License',
-    'Programming Language :: Python',
-    'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.6',
-    'Programming Language :: Python :: 3.7',
-    'Programming Language :: Python :: 3.8',
+version = "0.1.6"
+dependencies = [
+    "docopt ~=0.6.2"
 ]
-license = "MIT"
+requires-python = ">=3.6"
+description = "A command-line interface for disassembling and assembling the Hermes Bytecode."
+authors = [
+    {name = "bongtrop"},
+    {name = "ErbaZZ"},
+    {name = "Sighery"},
+]
+maintainers = [
+    {name = "Sighery"},
+]
 readme = "README.md"
-homepage = "https://github.com/bongtrop/hbctool"
-repository = "https://github.com/bongtrop/hbctool"
-documentation = "https://github.com/bongtrop/hbctool"
+license = "MIT"
+license-files = ["LICENSE"]
+keywords = [
+    "HBC", "Hermes", "bytecode", "React", "React Native",
+    "Reverse Engineering", "hacking",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Cybersecurity :: Reverse Engineering",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
 
-[tool.poetry.dependencies]
-python = "^3.6"
-docopt = "^0.6.2"
+[project.urls]
+Homepage = "https://github.com/Sighery/hbctool"
+Documentation = "https://github.com/Sighery/hbctool"
+Repository = "https://github.com/Sighery/hbctool"
 
-[tool.poetry.dev-dependencies]
+[project.scripts]
+hbctool = "hbctool:main"
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
 
-[tool.poetry.scripts]
-hbctool = "hbctool:main"
+[tool.setuptools]
+packages = ["hbctool"]
